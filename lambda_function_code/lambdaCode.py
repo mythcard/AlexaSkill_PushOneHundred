@@ -73,6 +73,7 @@ def on_intent(intent_request, session):
     elif intent_name == "AMAZON.NoIntent":
         return performNextStepAfterNo(session)
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
+        print("ENCODE UNFORTUNATE STOP")
         return handle_session_end_request()
     else:
         raise ValueError("Invalid intent")
@@ -146,6 +147,16 @@ def getIntrPlayerCommand(finalCounter, inflectionPoint):
     else:
         return getNormalCommand()
 
+def getPlayerWinResponse():
+    playerWinnerResponses = ["The Game just ended. You are great at this. Challenge me another time and I shall show you, my prowess.","<speak><prosody pitch = \"+50%\" rate = \"75%\" volume = \"x-loud\" >Ha Ha!</prosody> I know where I faltered this time. May be next time, I shall not be on a slippery slope as this one, Until then, see you when I see you.</speak>","<speak><prosody pitch = \"+20%\" rate = \"75%\" >Okaaaaaay Okaaaaaay Okaaaaaaaaaaaaay, you win this time.  Thank you for playing Push One Hundred, I now, need to console the kid. </prosody></speak>"]
+    response = random.choice(playerWinnerResponses)
+    return response
+
+def getUserWinResponse(userCounter, finalCounter):
+    userWinResponses = ["<speak><prosody pitch = \"+50%\" rate = \"75%\" volume = \"x-loud\" >Hurray!</prosody> I played, " + userCounter + ". The current counter now, is set to " + finalCounter +". Since you have no other play, the Game just ended. I win. Practice well and come back another time to challenge me.</speak>"]
+    response = random.choice(userWinResponses)
+    return response
+
 
 def get_welcome_response(session):
     print("SessionId: " + session['sessionId'])
@@ -159,8 +170,6 @@ def get_welcome_response(session):
 
     if('userId' in session['user'].keys()):
         print("ENCODE USERID:"+session['user']['userId'])
-    if('consentToken' in session['user'].keys()):
-        print("ENCODE CONSENTTOKEN:" + session['user']['consentToken'])
 
     print("Inflection point in this game: " + str(inflectionPoint))
     print("ENCODE INFLECTION:"+ str(inflectionPoint))
@@ -172,7 +181,7 @@ def get_welcome_response(session):
     card_title = "Welcome"
 
 
-    speech_output = "Welcome to the Push One to Hundred arena. This is an awesome place to test or sharpen your analytical skill. So let us get started. The rules of the game are simple. There is a counter which is at zero for now. At every turn each player gets to choose a number between one and ten. And the counter gets incremented by the number the player chooses. The objective of the player, is to push the opponent to tell 100. The player who forces the opponent to 100, wins. So let us start push one to hundred. Please say Yes to start, and no to forfeit"
+    speech_output = "Welcome to the Push One to Hundred arena! This is where, people excercise hard to enhance their wisdom, just kidding! Keeping jokes aside, let us get started. The rules of the game are simple. There is a counter which is at zero for now. At every turn each player gets to choose a number between one and ten. And the counter gets incremented by the number the player chooses. The objective of the player, is to push the opponent to tell 100. The player who forces the opponent to 100, wins. So let us start push one to hundred. Please say Yes to start, and no to forfeit"
     #speech_output = "Its testing you douche bag. Please say Yes to start, and no to forfeit"
     # If the user either does not reply to the welcome message or says something
     # that is not understood, they will be prompted again with the same text.
@@ -194,10 +203,15 @@ def performNextStepAfterNo(session):
     userStrategyNo = session['attributes']['userStrategyNo']
     stepNo = session['attributes']['stepNo']
 
+    """this piece is in response to an error on 11/11-11/12, this still needs to be tested """
+    speech_output = "The counter is currently at " + str(finalCounter) + ". Choose a number between 1 to 10 to push me to 100."
 
     if (sessionGameState == 'begining'):
+        print("ENCODE GAMESTATE:" + sessionGameState + " at step: " + str(stepNo))
+        print("ENCODE UNEXPECTED GAME TERMINATION")
         return handle_session_end_request()
     elif (sessionGameState == 'AskUserWhetherNumYesNo'):
+        print("ENCODE NO PROC INVOKED at step: " + str(stepNo))
         speech_output = "The counter is currently at "+str(finalCounter)+". Choose a number between 1 to 10 to push me to 100."
 
     session_attributes = {"sessionGameState": sessionGameState, "finalCounter": finalCounter, "playerCounter": 0,
@@ -220,6 +234,7 @@ def performNextStepAfterYes(session):
     inflectionPoint = session['attributes']['inflectionPoint']
     userStrategyNo = session['attributes']['userStrategyNo']
     stepNo = session['attributes']['stepNo']
+    sessionId = session['sessionId']
 
 
     if (sessionGameState == 'begining' and finalCounter >= 0 and finalCounter < 100):
@@ -227,14 +242,16 @@ def performNextStepAfterYes(session):
         userCounter = getUserChoice()
         stepNo += 1
         print("User chose number: " + str(userCounter) + " at step: "+str(stepNo))
-        print("ENCODE USERCHOSE:" + str(userCounter)+" STEP:"+str(stepNo))
+        print("ENCODE USERCHOSE: " + str(userCounter)+" STEP: "+str(stepNo))
 
         finalCounter += userCounter
 
         print("Final counter right now: " + str(finalCounter)+ " at step: "+str(stepNo))
-        print("ENCODE FINCNT:" + str(finalCounter)+ " at step: "+str(stepNo))
+        print("ENCODE FINCNT: " + str(finalCounter)+ " at step: "+str(stepNo))
+        print("ENCODE GAMESTATE: " + sessionGameState + " at step: " + str(stepNo))
 
         sessionGameState = "askUserForNumber"
+        print("ENCODE GAMESTATE BEFORE LEAVING performNextStepAfterYes IN SECTION BEGINING: " + sessionGameState + " at step: " + str(stepNo))
         speech_output = "I played, " + str(userCounter) + ". The current counter now, is set to " + str(
             finalCounter) + ". It is your turn now, Choose a number between 1 to 10 and choose it wisely to push me to 100."
 
@@ -242,19 +259,22 @@ def performNextStepAfterYes(session):
         should_end_session = False
         stepNo += 1
         print("Player chose number: " + str(playerCounter) + " at step: "+str(stepNo))
-        print("ENCODE PLAYERCHOSE:" + str(playerCounter) + " STEP:"+str(stepNo))
+        print("ENCODE PLAYERCHOSE: " + str(playerCounter) + " STEP: "+str(stepNo))
 
         finalCounter += int(playerCounter)
 
         print("Final counter right now: " + str(finalCounter) + " at step: "+str(stepNo))
-        print("ENCODE FINCNT:" + str(finalCounter) + " at step: "+str(stepNo))
+        print("ENCODE FINCNT: " + str(finalCounter) + " at step: "+str(stepNo))
+        print("ENCODE GAMESTATE BEFORE USER PLAY: " + sessionGameState + " at step: " + str(stepNo))
 
         if(finalCounter >= 99):
             print("State before game ends: " + sessionGameState)
-            speech_output = "The Game just ended. You are great at this. Challenge me another time and I shall show you, my prowess. Before I shut down, wishing you a Happy Halloween!"
+            print("ENCODE GAME FOR SESSION " + sessionId + " at step: " + str(stepNo))
+            speech_output = getPlayerWinResponse()
             should_end_session = True
         else:
             sessionGameState = 'userTurn'
+            print("ENCODE GAMESTATE CHANGE TO: " + sessionGameState + " at step: " + str(stepNo))
 
 
         if(finalCounter > 0 and finalCounter < 100 and sessionGameState == 'userTurn'):
@@ -262,22 +282,30 @@ def performNextStepAfterYes(session):
 
             stepNo += 1
             print("User chose number: " + str(userCounter) + " at step: " + str(stepNo))
-            print("ENCODE USERCHOSE:" + str(userCounter) + " STEP:" + str(stepNo))
+            print("ENCODE USERCHOSE: " + str(userCounter) + " STEP: " + str(stepNo))
 
             finalCounter += userCounter
 
             print("Final counter right now: " + str(finalCounter) + " at step: " + str(stepNo))
-            print("ENCODE FINCNT:" + str(finalCounter) + " at step: " + str(stepNo))
+            print("ENCODE FINCNT: " + str(finalCounter) + " at step: " + str(stepNo))
+            print("ENCODE GAMESTATE: " + sessionGameState + " at step: " + str(stepNo))
 
             if (finalCounter >= 100):
-                speech_output = "The Game just ended. You are great at this. Challenge me another time and I shall show you, my prowess. Before I shut down, wishing you a Happy Halloween!"
+                print("State before game ends: " + sessionGameState)
+                print("ENCODE GAME FOR SESSION " + sessionId + " at step: " + str(stepNo))
+                speech_output = getPlayerWinResponse()
                 should_end_session = True
             elif(finalCounter == 99):
-                speech_output = "I played, " + str(userCounter) + ". The current counter now, is set to " + str(
-                    finalCounter)+". Since you have no other play, the Game just ended. I win. Practice well and come back another time to challenge me. Before I shut down, wishing you a Happy Halloween!"
+                print("State before game ends: " + sessionGameState)
+                print("ENCODE GAME FOR SESSION " + sessionId + " at step: " + str(stepNo))
+                speech_output = getUserWinResponse(str(userCounter),str(finalCounter))
                 should_end_session = True
             else:
                 sessionGameState = "askUserForNumber"
+                print(
+                    "ENCODE GAMESTATE BEFORE LEAVING performNextStepAfterYes IN SECTION AskUserWhetherNumYesNo: " + sessionGameState + " at step: " + str(
+                        stepNo))
+
                 speech_output = "I played, " + str(userCounter) + ". The current counter now, is set to " + str(
                     finalCounter)
                 speech_output = speech_output + getIntrPlayerCommand(finalCounter, inflectionPoint)
@@ -306,6 +334,7 @@ def get_help_response(session):
     inflectionPoint = session['attributes']['inflectionPoint']
     userStrategyNo = session['attributes']['userStrategyNo']
     stepNo = session['attributes']['stepNo']
+    stepNo = stepNo + 1
 
     #session_attributes = {}
 
@@ -314,6 +343,8 @@ def get_help_response(session):
                           "userStrategyNo": userStrategyNo, "stepNo": stepNo}
     card_title = "Help"
     speech_output = "This is Push One to Hundred arena. This is an awesome place to test or sharpen your analytical skill. The rules of the game are simple. This is a turn based game. There is a counter, which is set to a certain number, between 1 and 99, at all times. At each turn, each player gets to choose a number between one and ten. And the counter gets incremented by the number, the player chooses. The objective of the player, is to push the opponent to tell 100. The player who forces the opponent to 100, wins. Please say Yes to resume, or just say Help to hear back the details."
+
+    print("ENCODE STATE IN HELP STATE: " + sessionGameState + " at step: " + str(stepNo))
 
     reprompt_text = speech_output
     should_end_session = False
@@ -377,7 +408,7 @@ def getNumberFromUser(intent_request,session):
 
 def handle_session_end_request():
     card_title = "Session Ended"
-    speech_output = "Thank you for playing Push One To Hundred. Hope it was both entertaining and educational."
+    speech_output = "Thank you for playing Push One To Hundred. Hope it was fun and entertaining."
     # Setting this to true ends the session and exits the skill.
     should_end_session = True
     return build_response({}, build_speechlet_response(
@@ -388,24 +419,45 @@ def handle_session_end_request():
 
 
 def build_speechlet_response(title, output, reprompt_text, should_end_session):
-    return {
-        'outputSpeech': {
-            'type': 'PlainText',
-            'text': output
-        },
-        'card': {
-            'type': 'Simple',
-            'title':  title,
-            'content':   output
-        },
-        'reprompt': {
+    if output[0:7] == '<speak>':
+        return {
+            'outputSpeech': {
+                'type': 'SSML',
+                'ssml': output
+            },
+            'card': {
+                'type': 'Simple',
+                'title': title,
+                'content': "SSML"
+            },
+            'reprompt': {
+                'outputSpeech': {
+                    'type': 'PlainText',
+                    'text': reprompt_text
+                }
+            },
+            'shouldEndSession': should_end_session
+        }
+
+    else:
+        return {
             'outputSpeech': {
                 'type': 'PlainText',
-                'text': reprompt_text
-            }
-        },
-        'shouldEndSession': should_end_session
-    }
+                'text': output
+            },
+            'card': {
+                'type': 'Simple',
+                'title': title,
+                'content': output
+            },
+            'reprompt': {
+                'outputSpeech': {
+                    'type': 'PlainText',
+                    'text': reprompt_text
+                }
+            },
+            'shouldEndSession': should_end_session
+        }
 
 
 def build_response(session_attributes, speechlet_response):
